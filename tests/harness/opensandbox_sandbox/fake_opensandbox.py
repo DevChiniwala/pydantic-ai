@@ -72,7 +72,7 @@ class FakeSandbox:
     resource: dict[str, str]
     expires_at: str | None
     network_policy: dict[str, Any] | None = None
-    credential_proxy: dict[str, Any] | None = None
+    credential_proxy: dict[str, object] | None = None
     secure_access: bool = False
     state: str = 'Running'
     processes: dict[str, asyncio.subprocess.Process] = field(default_factory=lambda: {})
