@@ -80,8 +80,8 @@ class DaytonaSandbox(AbstractCapability[AgentDepsT]):
     secrets: Mapping[str, str] | None = None
     """Daytona's `secrets` for a new sandbox, passed to `AsyncDaytona.create` unchanged: environment
     variable name to the name of an existing organization Secret. The variable holds a placeholder that
-    Daytona's proxy, outside the sandbox, replaces with the real value on requests to the Secret's hosts,
-    so the agent's commands can use a credential they cannot read. An attached sandbox keeps the ones it
+    Daytona's proxy, outside the sandbox, replaces with the real value on requests to the Secret's `hosts`
+    (any host if it has none), so the agent's commands can use a credential they cannot read. An attached sandbox keeps the ones it
     was created with."""
 
     def __post_init__(self) -> None:
