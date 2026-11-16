@@ -164,17 +164,7 @@ def seed_script(snapshot: Snapshot) -> str:
         lines.append('git init --quiet')
     if snapshot.bundle is not None:
         lines += [f'git fetch --quiet {BUNDLE_PATH} {_SEED_REF}:{_SEED_REF}', f'rm -f {BUNDLE_PATH}']
-    branch = q(snapshot.branch) if snapshot.branch else None
-    if snapshot.head is not None:
-        lines.append(
-            f'git checkout --quiet -B {branch} {snapshot.head}'
-            if branch
-            else f'git checkout --quiet --detach {snapshot.head}'
-        )
-        if branch and snapshot.clone_url is not None:
-            lines.append(f'git branch --quiet --set-upstream-to=origin/{branch} 2>/dev/null || true')
-    elif branch:
-        lines.append(f'git symbolic-ref HEAD refs/heads/{branch}')
+    lines += _checkout(snapshot)
     if snapshot.changed and snapshot.work is not None:
         # The uncommitted files, as they were: changed in the working tree, not staged.
         lines += (
@@ -185,6 +175,19 @@ def seed_script(snapshot: Snapshot) -> str:
     if snapshot.bundle is not None:
         lines.append(f'git update-ref -d {_SEED_REF}')
     return '\n'.join(lines)
+
+
+def _checkout(snapshot: Snapshot) -> list[str]:
+    """The commands that put `snapshot`'s branch and commit back."""
+    branch = shlex.quote(snapshot.branch) if snapshot.branch else None
+    if snapshot.head is None:
+        return [f'git symbolic-ref HEAD refs/heads/{branch}'] if branch else []
+    if branch is None:
+        return [f'git checkout --quiet --detach {snapshot.head}']
+    lines = [f'git checkout --quiet -B {branch} {snapshot.head}']
+    if snapshot.clone_url is not None:
+        lines.append(f'git branch --quiet --set-upstream-to=origin/{branch} 2>/dev/null || true')
+    return lines
 
 
 async def seed(backend: SandboxBackend, snapshot: Snapshot) -> None:
