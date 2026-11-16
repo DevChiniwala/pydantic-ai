@@ -156,6 +156,38 @@ async def run_in_prepared_sandbox() -> str:
 
 The run uses the backend as it is, so `DaytonaSandbox`'s settings don't apply to it, and leaves it open: close it with `aclose()`. To keep the sandbox instead, store `backend.ref` and pass it as `workspace=` to reattach later.
 
+## Give commands a credential they cannot read
+
+`secrets` takes Daytona's `secrets` option, passed to `AsyncDaytona.create` unchanged: environment variable name to the name of an existing organization [Secret](https://www.daytona.io/docs/en/secrets). In the sandbox the variable holds an opaque placeholder, and Daytona's proxy, outside the sandbox, replaces it with the real value on HTTPS requests to the Secret's hosts, also inside Basic auth. Create the Secret once, then mount it:
+
+```python {test="skip"}
+from daytona import AsyncDaytona, CreateSecretParams
+
+from pydantic_ai_harness.daytona_sandbox import DaytonaSandbox
+
+
+async def create_github_secret(token: str) -> None:  # a GitHub token, such as the output of `gh auth token`
+    async with AsyncDaytona() as daytona:
+        await daytona.secret.create(
+            CreateSecretParams(
+                name='github-token',
+                value=token,
+                hosts=['github.com', 'api.github.com', 'uploads.github.com'],
+            )
+        )
+
+
+sandbox = DaytonaSandbox(secrets={'GH_TOKEN': 'github-token'})
+```
+
+`gh` then acts as the token's owner, while `echo $GH_TOKEN` in the sandbox prints only the placeholder. For `git push`, have a command in the sandbox send the placeholder as the HTTPS password:
+
+```bash
+git config --global credential.https://github.com.helper '!f() { echo username=x-access-token; echo "password=$GH_TOKEN"; }; f'
+```
+
+A remote such as `git@github.com:owner/repo.git` gets no credential: use the `https://` URL. The agent can still use the token for anything it allows, on any repository it reaches. `secrets` applies to a sandbox `DaytonaSandbox` creates; an attached sandbox keeps the ones it was created with. To rotate the token, call `daytona.secret.update` with the new value; running sandboxes use it within about 30 seconds. To change which Secrets a running sandbox mounts, call `update_secrets` on `await backend.get_sandbox()`; a sandbox created without secrets must restart before new ones work.
+
 ## Clean up
 
 Pydantic AI never stops or deletes the sandbox. Daytona stops a container sandbox, such as one from the default snapshot, after 15 idle minutes by default (set `auto_stop_interval=` to change that, or `0` to keep it running). A stopped sandbox keeps its disk and is archived after 7 days. A sandbox from a VM snapshot is paused after 60 idle minutes instead, and is never archived. Either way, a later run starts it again, and Daytona never deletes it. Delete it with the ref you stored:
@@ -212,6 +244,7 @@ A run that ends before its ref is stored, such as a crash, Ctrl-C, or a killed w
 | `allow_internet_access` | Whether a new sandbox can reach the internet. When `False`, what is blocked depends on your Daytona organization's tier: on Tier 3 and 4 everything, while lower tiers keep package registries, GitHub, and AI APIs reachable, so there it is not an exfiltration boundary. See [Daytona's network limits](https://www.daytona.io/docs/en/network-limits/). Default: `True`. |
 | `working_dir` | Absolute directory commands start in and relative paths resolve against. Default: `None`, the sandbox's own (`/home/daytona`, where commands run as non-root `daytona`); set a project directory, or use relative paths for portable code. Created on a new sandbox; on an attached or caller-supplied sandbox it must already exist. |
 | `env` | Environment variables every command gets. Default: `None`. Nothing from your machine's environment reaches the sandbox. |
+| `secrets` | Daytona's `secrets` for a new sandbox, passed to `AsyncDaytona.create` unchanged: environment variable name to the name of an existing organization Secret. Default: `None`. An attached sandbox keeps the ones it was created with. See [Give commands a credential they cannot read](#give-commands-a-credential-they-cannot-read). |
 
 Daytona runs on the asyncio event loop only: its SDK uses asyncio tasks, so under Trio the backend raises `UserError`.
 

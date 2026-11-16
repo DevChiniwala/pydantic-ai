@@ -43,6 +43,7 @@ async def test_capability_is_lazy_and_forwards_options(fake_daytona: FakeDaytona
         auto_stop_interval=0,
         working_dir='/work',
         env={'A': 'b'},
+        secrets={'GH_TOKEN': 'github-token'},
         allow_internet_access=False,
     )
     backend = capability.get_workspace(_ctx(), ref=None)
@@ -54,8 +55,9 @@ async def test_capability_is_lazy_and_forwards_options(fake_daytona: FakeDaytona
         params.snapshot,
         params.auto_stop_interval,
         params.env_vars,
+        params.secrets,
         params.network_block_all,
-    ) == ('python', 0, {'A': 'b'}, True)
+    ) == ('python', 0, {'A': 'b'}, {'GH_TOKEN': 'github-token'}, True)
 
 
 @pytest.mark.parametrize(
@@ -345,6 +347,7 @@ def test_agent_spec_schema_publishes_the_spec_expressible_fields() -> None:
         'description',
         'env',
         'id',
+        'secrets',
         'snapshot',
         'working_dir',
     ]
@@ -356,6 +359,7 @@ def test_from_spec_forwards_the_spec_fields() -> None:
         'description': 'a sandbox',
         'working_dir': '/work',
         'env': {'FOO': 'bar'},
+        'secrets': {'GH_TOKEN': 'github-token'},
         'snapshot': 'base',
         'auto_stop_interval': 30,
         'allow_internet_access': False,

@@ -427,6 +427,11 @@ class DaytonaSandboxBackend(WorkspaceBackend, SupportsCommands, SupportsFilesyst
             sandbox's own default when `None`, discovered with `pwd -P` on first use.
         env: Environment variables every command gets; a command's own `env` is layered on top.
             They are also set on a newly created sandbox.
+        secrets: Daytona's `secrets` for a newly created sandbox, passed to `AsyncDaytona.create`
+            unchanged: environment variable name to the name of an existing organization Secret. The
+            variable holds a placeholder that Daytona's proxy, outside the sandbox, replaces with the
+            real value on requests to the Secret's hosts. An attached sandbox keeps the ones it was
+            created with.
     """
 
     def __init__(
@@ -440,6 +445,7 @@ class DaytonaSandboxBackend(WorkspaceBackend, SupportsCommands, SupportsFilesyst
         allow_internet_access: bool = True,
         working_dir: str | None = None,
         env: Mapping[str, str] | None = None,
+        secrets: Mapping[str, str] | None = None,
     ) -> None:
         if ref is not None:
             check_provider(ref, 'daytona')
@@ -457,6 +463,7 @@ class DaytonaSandboxBackend(WorkspaceBackend, SupportsCommands, SupportsFilesyst
         self._auto_stop_interval = auto_stop_interval
         self._allow_internet_access = allow_internet_access
         self._env = dict(env or {})
+        self._secrets = dict(secrets) if secrets is not None else None
         self._working_dir = absolute_path('working_dir', working_dir)
         # `working_dir()` must return a canonical absolute path, resolved once with `pwd -P`.
         self._resolved_working_dir: str | None = None
@@ -529,6 +536,7 @@ class DaytonaSandboxBackend(WorkspaceBackend, SupportsCommands, SupportsFilesyst
             name=name,
             snapshot=self._snapshot,
             env_vars=self._env or None,
+            secrets=self._secrets,
             auto_stop_interval=self._auto_stop_interval,
             network_block_all=not self._allow_internet_access,
             labels={'created-by': 'pydantic-ai'},

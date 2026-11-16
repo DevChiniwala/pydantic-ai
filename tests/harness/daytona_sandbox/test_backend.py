@@ -655,6 +655,13 @@ class TestErrorsAndFilesystem:
     async def test_created_sandbox_has_provenance_label(self, fake_daytona: FakeDaytona) -> None:
         await DaytonaSandboxBackend().get_sandbox()
         assert fake_daytona.create_params[0].labels == {'created-by': 'pydantic-ai'}
+        assert fake_daytona.create_params[0].secrets is None
+
+    async def test_secrets_pass_through(self, fake_daytona: FakeDaytona) -> None:
+        await started(secrets={'GH_TOKEN': 'github-token'})
+        assert fake_daytona.create_params[0].secrets == {'GH_TOKEN': 'github-token'}
+        # Only the Secret's name is sent; the variable is not set as a plain environment variable.
+        assert fake_daytona.create_params[0].env_vars is None
 
     async def test_refused_creation_names_the_provider_and_the_sdk_message(self, fake_daytona: FakeDaytona) -> None:
         fake_daytona.create_error = DaytonaNotFoundError("Snapshot 'nope' not found", status_code=404)

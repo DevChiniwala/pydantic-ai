@@ -77,6 +77,13 @@ class DaytonaSandbox(AbstractCapability[AgentDepsT]):
     """Environment variables every command gets, also on an attached sandbox; a command's `env` is
     layered on top. Nothing is read from the host."""
 
+    secrets: Mapping[str, str] | None = None
+    """Daytona's `secrets` for a new sandbox, passed to `AsyncDaytona.create` unchanged: environment
+    variable name to the name of an existing organization Secret. The variable holds a placeholder that
+    Daytona's proxy, outside the sandbox, replaces with the real value on requests to the Secret's hosts,
+    so the agent's commands can use a credential they cannot read. An attached sandbox keeps the ones it
+    was created with."""
+
     def __post_init__(self) -> None:
         reject_defer_loading('DaytonaSandbox', self.defer_loading)
         # Checked here rather than at the first workspace operation, so a bad value fails where it is written.
@@ -95,6 +102,7 @@ class DaytonaSandbox(AbstractCapability[AgentDepsT]):
         allow_internet_access: bool = True,
         working_dir: str | None = None,
         env: Mapping[str, str] | None = None,
+        secrets: Mapping[str, str] | None = None,
     ) -> DaytonaSandbox[Any]:
         """Build from an agent spec, naming the fields a spec can express.
 
@@ -111,6 +119,7 @@ class DaytonaSandbox(AbstractCapability[AgentDepsT]):
             allow_internet_access=allow_internet_access,
             working_dir=working_dir,
             env=env,
+            secrets=secrets,
         )
 
     def backend(self, ref: WorkspaceRef) -> DaytonaSandboxBackend:
@@ -138,6 +147,7 @@ class DaytonaSandbox(AbstractCapability[AgentDepsT]):
             allow_internet_access=self.allow_internet_access,
             working_dir=self.working_dir,
             env=self.env,
+            secrets=self.secrets,
         )
 
     async def wrap_run(self, ctx: RunContext[AgentDepsT], *, handler: WrapRunHandler) -> AgentRunResult[Any]:
