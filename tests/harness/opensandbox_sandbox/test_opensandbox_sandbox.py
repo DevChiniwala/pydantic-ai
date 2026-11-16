@@ -13,7 +13,7 @@ from typing import Any
 
 import pytest
 from opensandbox.config import ConnectionConfig
-from opensandbox.models.sandboxes import CredentialProxyConfig, NetworkPolicy
+from opensandbox.models.sandboxes import NetworkPolicy
 
 import pydantic_ai_harness.opensandbox_sandbox as opensandbox_package
 from pydantic_ai import Agent, RunContext, models
@@ -244,19 +244,16 @@ class TestRuns:
         [sandbox] = server.sandboxes.values()
         assert sandbox.network_policy == {'defaultAction': 'deny'}
 
-    async def test_network_policy_and_credential_proxy_reach_creation(
-        self, server: FakeOpenSandbox, working_dir: str
-    ) -> None:
+    async def test_network_policy_reaches_creation(self, server: FakeOpenSandbox, working_dir: str) -> None:
         capability = OpenSandbox[None](
             image='fake-image',
             connection=server.connection,
             working_dir=working_dir,
             network_policy=NetworkPolicy(defaultAction='allow'),
-            credential_proxy=CredentialProxyConfig(enabled=True),
         )
         await _agent(capability).run('where are you?')
         [sandbox] = server.sandboxes.values()
-        assert (sandbox.network_policy, sandbox.credential_proxy) == ({'defaultAction': 'allow'}, {'enabled': True})
+        assert sandbox.network_policy == {'defaultAction': 'allow'}
 
     @pytest.mark.parametrize('use_agent', [False, True], ids=['backend', 'agent'])
     async def test_disabling_internet_does_not_change_an_existing_sandbox(

@@ -27,7 +27,7 @@ from pydantic_ai_harness.opensandbox_sandbox._backend import (
 
 if TYPE_CHECKING:
     from opensandbox.config import ConnectionConfig
-    from opensandbox.models.sandboxes import CredentialProxyConfig, NetworkPolicy
+    from opensandbox.models.sandboxes import NetworkPolicy
 
     from pydantic_ai.agent import AgentRunResult
 
@@ -97,14 +97,6 @@ class OpenSandbox(AbstractCapability[AgentDepsT]):
     network_policy: NetworkPolicy | None = None
     """The SDK's `NetworkPolicy` for a new sandbox, passed to `Sandbox.create` unchanged; a spec cannot set it.
     Does not change the policy of an attached sandbox."""
-
-    credential_proxy: CredentialProxyConfig | None = None
-    """The SDK's `CredentialProxyConfig` for a new sandbox, passed to `Sandbox.create` unchanged; a spec cannot set it.
-
-    `CredentialProxyConfig(enabled=True)` lets the server's egress sidecar, outside the sandbox, add the credentials
-    in the sandbox's `credential_vault` to matching requests, so the agent's commands can use a credential they
-    cannot read. Does not change the setting of an attached sandbox.
-    """
 
     secure_access: bool = False
     """Ask the server to turn on Secure Access for a new sandbox.
@@ -200,7 +192,6 @@ class OpenSandbox(AbstractCapability[AgentDepsT]):
             resource=self.resource,
             allow_internet_access=self.allow_internet_access,
             network_policy=self.network_policy,
-            credential_proxy=self.credential_proxy,
             secure_access=self.secure_access,
             sandbox_timeout=self.sandbox_timeout,
         )
