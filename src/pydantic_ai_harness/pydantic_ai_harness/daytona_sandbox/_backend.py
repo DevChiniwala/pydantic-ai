@@ -430,7 +430,7 @@ class DaytonaSandboxBackend(WorkspaceBackend, SupportsCommands, SupportsFilesyst
         secrets: Daytona's `secrets` for a newly created sandbox, passed to `AsyncDaytona.create`
             unchanged: environment variable name to the name of an existing organization Secret. The
             variable holds a placeholder that Daytona's proxy, outside the sandbox, replaces with the
-            real value on requests to the Secret's hosts. An attached sandbox keeps the ones it was
+            real value on requests to the Secret's `hosts`, or to any host if it has none. An attached sandbox keeps the ones it was
             created with.
     """
 
