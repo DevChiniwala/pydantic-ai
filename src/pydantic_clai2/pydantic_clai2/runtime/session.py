@@ -173,10 +173,24 @@ def _overrides_get_workspace(leaf: AbstractCapability[DepsT], *, include_dynamic
             # A wrapped tree's leaves are visited on their own; only a lone wrapped capability hides behind its wrapper.
             return False
         leaf = leaf.wrapped
+    if isinstance(leaf, SessionWorkspace):
+        return leaf.supplies()
     if isinstance(leaf, DynamicCapability):
         # A capability function's capability, and so its workspace, is known only once the run starts.
         return include_dynamic and not isinstance(leaf, WorkspacelessCapability)
     return type(leaf).get_workspace is not AbstractCapability.get_workspace
+
+
+class SessionWorkspace(AbstractCapability[DepsT]):
+    """A capability that supplies the run's workspace in some conversations only, such as the `sandbox` plugin's.
+
+    CLAI asks `supplies` before each run. While it is false, CLAI attaches the session's directory as it
+    would without this capability; while it is true, `get_workspace` supplies the run's workspace instead.
+    """
+
+    def supplies(self) -> bool:
+        """Whether the next run's workspace comes from this capability."""
+        return False
 
 
 class WorkspacelessCapability(DynamicCapability[DepsT]):

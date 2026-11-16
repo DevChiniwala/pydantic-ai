@@ -20,7 +20,7 @@ from pydantic_clai2 import DEFAULT_PLUGINS
 from pydantic_clai2.builtin_plugins.github import SETUP
 from pydantic_clai2.commands import Commands
 from pydantic_clai2.config.settings_store import SettingsStore
-from pydantic_clai2.gh_cli import INSTALL, GhLogin, GhToken, gh_command, gh_host, gh_token, start_login
+from pydantic_clai2.gh_cli import INSTALL, GhLogin, GhToken, gh_command, gh_host, gh_token, gh_user, start_login
 from pydantic_clai2.plugins import SessionStart
 from pydantic_clai2.plugins.loader import PluginLoader
 from pydantic_clai2.ui.menus import dialogs
@@ -190,6 +190,13 @@ async def test_gh_token_ignores_token_variables(monkeypatch: pytest.MonkeyPatch,
     assert await token(None) == 'gho_first'
     fake_gh.sign_in(token='gho_switched')
     assert await token(None) == 'gho_switched'
+
+
+def test_gh_user(fake_gh: FakeGh) -> None:
+    assert gh_user('github.com') is None
+    fake_gh.sign_in()
+    assert gh_user('github.com') == 'octocat'
+    assert fake_gh.calls()[-1] == 'api --hostname github.com user --jq .login'
 
 
 @pytest.mark.parametrize(

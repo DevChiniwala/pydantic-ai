@@ -39,10 +39,12 @@ Docs outside the package are copied into `pydantic_clai2/_docs/` by the wheel's 
 
 _HARNESS_DOCS = (
     'ask_user',
+    'boxd_sandbox',
     'code_mode',
     'coder',
     'compaction',
     'day_ai',
+    'e2b_sandbox',
     'file_system',
     'github',
     'google_workspace',
@@ -50,6 +52,7 @@ _HARNESS_DOCS = (
     'guardrails',
     'linear',
     'logfire_mcp',
+    'modal_sandbox',
     'notion',
     'ordinal',
     'permissions',
