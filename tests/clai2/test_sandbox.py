@@ -11,7 +11,6 @@ import io
 import itertools
 import subprocess
 import sys
-import types
 import uuid
 from collections.abc import AsyncIterator, Iterator, Mapping
 from dataclasses import dataclass, field
@@ -38,7 +37,6 @@ from pydantic_clai2.builtin_plugins.sandbox.providers import (
     GitHubCredential,
     boxd as boxd_provider,
     e2b as e2b_provider,
-    modal as modal_provider,
 )
 from pydantic_clai2.builtin_plugins.sandbox.providers.base import SANDBOX_ENV
 from pydantic_clai2.builtin_plugins.sandbox.providers.e2b import E2BProvider
@@ -60,8 +58,6 @@ if TYPE_CHECKING or find_spec('boxd') is not None:  # pragma: no branch - the de
     from boxd import Machine
 
     from tests.harness.boxd_sandbox.fake_boxd import FakeBoxd, FakeClient
-if TYPE_CHECKING or find_spec('modal') is not None:  # pragma: no branch - the dev environment has every extra
-    from tests.harness.modal_sandbox.fake_modal import FakeImage, FakeModal
 
 CLONE_URL = 'https://github.com/owner/repo.git'
 
@@ -464,7 +460,7 @@ class TestLifecycle:
         assert plugin_of(loaded).current() is None
 
     async def test_history_in_an_unknown_workspace_runs_here(self, checkout: Path, provider: FakeProvider) -> None:
-        loaded = load(checkout, Transcript(messages=worked_in(WorkspaceRef(provider='modal', id='sb-1'))))
+        loaded = load(checkout, Transcript(messages=worked_in(WorkspaceRef(provider='retired', id='sb-1'))))
         assert plugin_of(loaded).current() is None
         assert [segment() for segment in loaded.status_segments] == ['']
 
@@ -564,83 +560,6 @@ class TestE2B:
         assert fake_e2b.sandboxes[0].killed
         # `/keys` wins over the environment, for every call.
         assert set(fake_e2b.clients) == {'from-keys'}
-
-
-@dataclass(frozen=True)
-class FakePolicy:
-    """Modal's `OutboundPolicy`, keeping each header replacement as `(domain, headers)`."""
-
-    replacements: tuple[tuple[str, dict[str, str]], ...] = ()
-
-    def with_header_replacement(self, *, domain: str, headers: dict[str, str]) -> 'FakePolicy':
-        return FakePolicy((*self.replacements, (domain, headers)))
-
-
-@pytest.fixture
-def fake_modal(monkeypatch: pytest.MonkeyPatch) -> Iterator['FakeModal']:
-    """The harness's fake Modal SDK as `modal`, with a `FakePolicy` as `modal.experimental.OutboundPolicy`."""
-    control = FakeModal()
-    # The harness accepts only a `modal.Image`, so the fake's images must be its `Image`.
-    monkeypatch.setattr(FakeImage, 'debian_slim', staticmethod(FakeImage), raising=False)
-    control.module.Image = FakeImage  # type: ignore[attr-defined]
-    experimental = types.ModuleType('modal.experimental')
-    experimental.OutboundPolicy = FakePolicy  # type: ignore[attr-defined]
-    monkeypatch.setitem(sys.modules, 'modal', control.module)
-    monkeypatch.setitem(sys.modules, 'modal.experimental', experimental)
-    yield control
-
-
-@pytest.mark.skipif(find_spec('modal') is None, reason='modal not installed')
-class TestModal:
-    """Modal, through the SDK fake the harness's own Modal tests use: a live run needs a billed account."""
-
-    def test_missing(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        from modal.config import config
-
-        settings: dict[str, str] = {}
-
-        def get(key: str) -> str | None:
-            return settings.get(key)
-
-        monkeypatch.setattr(config, 'get', get)
-        modal = modal_provider.ModalProvider()
-        assert modal.missing() == (
-            'Sign in to Modal: run uvx modal token new, or set MODAL_TOKEN_ID and MODAL_TOKEN_SECRET.'
-        )
-        settings.update(token_id='ak-1', token_secret='as-1')
-        assert modal.missing() is None
-
-        def not_installed(name: str) -> None:
-            return None
-
-        monkeypatch.setattr(modal_provider, 'find_spec', not_installed)
-        assert modal.missing() == (
-            "Modal support is not installed. Install CLAI with it: uv tool install 'pydantic-clai2[modal]'."
-        )
-
-    async def test_create_reopen_delete(self, fake_modal: 'FakeModal') -> None:
-        modal = modal_provider.ModalProvider()
-        github = GitHubCredential(login='Ada', token='gho_x')
-        ref, backend = await modal.create(github=github)
-        assert ref == backend.ref == WorkspaceRef(provider='modal', id='sb-owned')
-        [call] = fake_modal.create_kwargs
-        assert call['env'] == {'GIT_TERMINAL_PROMPT': '0', 'GH_TOKEN': 'placeholder'}
-        assert call['workdir'] == '/home/user/workspace'
-        image = call['image']
-        assert isinstance(image, FakeImage)
-        assert {'git', 'gh'} <= set(image.apt_packages)
-        policy = call['outbound_policy']
-        assert isinstance(policy, FakePolicy)
-        assert list(policy.replacements) == [
-            ('github.com', {'Authorization': github.basic}),
-            ('api.github.com', {'Authorization': github.bearer}),
-            ('uploads.github.com', {'Authorization': github.bearer}),
-        ]
-        await modal.create(github=None)
-        assert fake_modal.create_kwargs[-1]['outbound_policy'] is None
-        assert modal.reopen(ref).ref == ref
-        await modal.delete(ref)
-        assert fake_modal.sandboxes[0].shutting_down
 
 
 @dataclass

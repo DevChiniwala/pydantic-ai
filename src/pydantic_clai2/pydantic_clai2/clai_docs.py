@@ -52,7 +52,6 @@ _HARNESS_DOCS = (
     'guardrails',
     'linear',
     'logfire_mcp',
-    'modal_sandbox',
     'notion',
     'ordinal',
     'permissions',

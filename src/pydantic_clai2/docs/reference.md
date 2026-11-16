@@ -50,7 +50,7 @@ everything it does, in detail. For an overview with screenshots, start with the
 | `/forks` | Show this session's background forks |
 | `/tasks` | Inspect and control delegated tasks |
 | `/commit [MESSAGE]` | Commit every change in the session's directory; the model drafts the message when none is given |
-| `/sandbox [e2b\|boxd\|modal\|local\|delete]` | Start a new conversation in a cloud sandbox; no argument says where this one runs. See [Cloud sandboxes](#cloud-sandboxes-sandbox) |
+| `/sandbox [e2b\|boxd\|local\|delete]` | Start a new conversation in a cloud sandbox; no argument says where this one runs. See [Cloud sandboxes](#cloud-sandboxes-sandbox) |
 | `/push [confirm]` | `git push -u origin BRANCH`; `confirm` is needed on the default branch |
 | `/pr [confirm\|TITLE]` | Show a pull request the model drafts; `confirm`, or a `TITLE` of your own, pushes the branch and opens it with `gh` |
 | `/update [now]` | Show whether a newer CLAI is out on `updates.channel`, with **Update…** to install it; `/update now` installs at once and restarts |
@@ -2836,7 +2836,7 @@ no agent telemetry spans.
 
 ### Cloud sandboxes: `/sandbox`
 
-Run `/sandbox e2b`, `/sandbox boxd`, or `/sandbox modal` in a new conversation, before its first
+Run `/sandbox e2b` or `/sandbox boxd` in a new conversation, before its first
 prompt. CLAI copies this checkout (the branch, its unpushed commits, and uncommitted files) into a
 new cloud sandbox, and every command and file edit of the conversation runs there. `/resume`
 reopens it, `/sandbox delete` deletes it, and `/sandbox local` returns to this machine before the
@@ -2846,7 +2846,6 @@ first prompt. `/sandbox` alone says where the conversation runs.
 |---|---|---|
 | `e2b` | `uv tool install 'pydantic-clai2[e2b]'` | `E2B_API_KEY` in `/keys` |
 | `boxd` | `uv tool install 'pydantic-clai2[boxd]'` | `BOXD_API_KEY` in `/keys` |
-| `modal` | `uv tool install 'pydantic-clai2[modal]'` | `uvx modal token new` |
 
 `git` and `gh` in the sandbox act as your `gh` login, so the agent can push and open pull
 requests. The token never enters the sandbox: the provider's network proxy, outside it, adds the
@@ -2854,7 +2853,7 @@ token to requests for `github.com`, `api.github.com`, and `uploads.github.com`, 
 holds only a stand-in. We use the proxy because it is the one way to give the agent GitHub access
 without handing it the token, so CLAI offers only providers whose proxy can do this. Kubernetes,
 Render, Sprites, smol, and Docker sandboxes have no such proxy. Daytona's can, but is not offered
-until it is tested.
+until it is tested. Modal's is experimental, so it is not offered.
 
 The provider holds the token only while the sandbox exists, and deleting the sandbox deletes it.
 Each sandbox gets the token `gh` has when you run `/sandbox`.
@@ -2863,7 +2862,6 @@ Each sandbox gets the token `gh` has when you run `/sandbox`.
 |---|---|---|
 | `e2b` | the sandbox's network rules; a paused sandbox keeps them | anyone with an API key for your E2B team can read them; use a team of your own |
 | `boxd` | a private secret made for the machine | no one else in the organization |
-| `modal` | the sandbox's outbound policy | no one else |
 
 Without a `gh` login, the sandbox has no GitHub access.
 

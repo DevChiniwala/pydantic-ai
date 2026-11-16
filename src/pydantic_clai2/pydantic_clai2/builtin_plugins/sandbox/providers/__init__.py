@@ -10,11 +10,8 @@ from collections.abc import Mapping
 from pydantic_clai2.builtin_plugins.sandbox.providers.base import GITHUB_HOSTS, GitHubCredential, SandboxProvider
 from pydantic_clai2.builtin_plugins.sandbox.providers.boxd import BoxdProvider
 from pydantic_clai2.builtin_plugins.sandbox.providers.e2b import E2BProvider
-from pydantic_clai2.builtin_plugins.sandbox.providers.modal import ModalProvider
 
 __all__ = ('GITHUB_HOSTS', 'PROVIDERS', 'GitHubCredential', 'SandboxProvider')
 
-PROVIDERS: Mapping[str, SandboxProvider] = {
-    provider.name: provider for provider in (E2BProvider(), BoxdProvider(), ModalProvider())
-}
+PROVIDERS: Mapping[str, SandboxProvider] = {provider.name: provider for provider in (E2BProvider(), BoxdProvider())}
 """The providers `/sandbox` offers, by name."""

@@ -151,7 +151,6 @@ what exists once on the first and what each session has on the second (see "Per 
 | `builtin_plugins/sandbox/providers/base.py` | the `SandboxProvider` protocol, `GitHubCredential` and its header values, `GITHUB_HOSTS`, `SANDBOX_ENV`, `saved_key` |
 | `builtin_plugins/sandbox/providers/e2b.py` | `E2BProvider`: the token in the sandbox's `network` rules, which set GitHub's `Authorization` header |
 | `builtin_plugins/sandbox/providers/boxd.py` | `BoxdProvider`: the token in a private boxd secret made for each machine and deleted with it, whose stand-in the machine spec keeps as `GH_TOKEN` |
-| `builtin_plugins/sandbox/providers/modal.py` | `ModalProvider`: the token in the sandbox's outbound policy, which sets GitHub's `Authorization` header |
 | `builtin_plugins/workspaces/__init__.py` | the opt-in built-in `workspaces` plugin: `/workspaces list\|create\|destroy` and its declared settings menu over the kinds (`WorkspacesSource`, with add and remove actions) |
 | `builtin_plugins/workspaces/kinds.py` | the plugin's settings: `WorkspacesSettings`, named kinds, each a backend's options (`WorktreeKind` for `local-worktree`) |
 | `builtin_plugins/workspaces/registry.py` | `Workspace` records (with the `conversation` the orchestrator runs there), one 0600 folder each under `$XDG_STATE_HOME/pydantic-clai2/workspaces/registry/`, shared by every CLAI; `write_private` |
