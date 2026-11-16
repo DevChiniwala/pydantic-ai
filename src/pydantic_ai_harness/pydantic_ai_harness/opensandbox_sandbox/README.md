@@ -82,7 +82,7 @@ ref = result.workspace.ref  # store this, e.g. in your database
 later = agent.run_sync('Now make it print the first 100.', workspace=ref)
 ```
 
-The ref is `WorkspaceRef(provider='opensandbox', id=<sandbox id>)`. Pass `workspace='new'` to create a fresh sandbox even when the message history names one. `image`, `resource`, `allow_internet_access`, `network_policy`, `credential_proxy` and `secure_access` only shape a new sandbox; `working_dir`, `env` and `sandbox_timeout` apply to an attached one too.
+The ref is `WorkspaceRef(provider='opensandbox', id=<sandbox id>)`. Pass `workspace='new'` to create a fresh sandbox even when the message history names one. `image`, `resource`, `allow_internet_access`, `network_policy` and `secure_access` only shape a new sandbox; `working_dir`, `env` and `sandbox_timeout` apply to an attached one too.
 
 A ref is trusted input: whoever passes one runs commands in that sandbox, and the server serves every sandbox to every holder of its API key. Only pass refs your application stored itself.
 
