@@ -161,7 +161,7 @@ The run uses the backend as it is, so `DaytonaSandbox`'s settings don't apply to
 
 ## Give commands a credential they cannot read
 
-`secrets` takes Daytona's `secrets` option, passed to `AsyncDaytona.create` unchanged: environment variable name to the name of an existing organization [Secret](https://www.daytona.io/docs/en/secrets). In the sandbox the variable holds an opaque placeholder, and Daytona's proxy, outside the sandbox, replaces it with the real value on HTTPS requests to the Secret's hosts, also inside Basic auth. Create the Secret once, then mount it:
+`secrets` takes Daytona's `secrets` option, passed to `AsyncDaytona.create` unchanged: environment variable name to the name of an existing organization [Secret](https://www.daytona.io/docs/en/secrets). In the sandbox the variable holds an opaque placeholder, and Daytona's proxy, outside the sandbox, replaces it with the real value on requests to the Secret's allowed hosts. Create the Secret once, then mount it:
 
 ```python {test="skip"}
 from daytona import AsyncDaytona, CreateSecretParams
@@ -189,7 +189,7 @@ sandbox = DaytonaSandbox(secrets={'GH_TOKEN': 'github-token'})
 git config --global credential.https://github.com.helper '!f() { echo username=x-access-token; echo "password=$GH_TOKEN"; }; f'
 ```
 
-A remote such as `git@github.com:owner/repo.git` gets no credential: use the `https://` URL. The agent can still use the token for anything it allows, on any repository it reaches. `secrets` applies to a sandbox `DaytonaSandbox` creates; an attached sandbox keeps the ones it was created with. To rotate the token, call `daytona.secret.update` with the new value; running sandboxes use it within about 30 seconds. To change which Secrets a running sandbox mounts, call `update_secrets` on `await backend.get_sandbox()`; a sandbox created without secrets must restart before new ones work.
+A remote such as `git@github.com:owner/repo.git` gets no credential: use the `https://` URL. The agent can still use the token for anything it allows, on any repository it reaches. Name only hosts you trust not to echo request headers back in a response, or a command can read the value there. `secrets` applies to a sandbox `DaytonaSandbox` creates; an attached sandbox keeps the ones it was created with. To rotate the token, call `daytona.secret.update` with the new value; Daytona says running sandboxes use it within seconds. To change which Secrets a running sandbox mounts, call `update_secrets` on `await backend.get_sandbox()`; a sandbox created without secrets must restart before new ones work.
 
 ## Clean up
 

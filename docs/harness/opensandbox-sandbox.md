@@ -216,7 +216,7 @@ async def github_sandbox() -> OpenSandboxBackend:
     return backend
 ```
 
-Pass the backend as `workspace=`, as in [Prepare a sandbox before the run](#prepare-a-sandbox-before-the-run). Add an allow rule for every other host the agent needs, such as a package index. A remote such as `git@github.com:owner/repo.git` gets no credential: use the `https://` URL. The agent can still use the token for anything it allows, on any repository it reaches.
+Pass the backend as `workspace=`, as in [Prepare a sandbox before the run](#prepare-a-sandbox-before-the-run). `credential_proxy` is an `OpenSandboxBackend` option only, not an `OpenSandbox` one: the vault has to be filled after the sandbox exists and before the agent's first command. Add an allow rule for every other host the agent needs, such as a package index. A remote such as `git@github.com:owner/repo.git` gets no credential: use the `https://` URL. The agent can still use the token for anything it allows, on any repository it reaches.
 
 The vault belongs to one sandbox and lives in the sidecar's memory. Pausing and resuming a Kubernetes sandbox, or restarting its sidecar, empties it, so fill it again after you reattach. To rotate the token, call `credential_vault.patch(credentials={'replace': [...]})` on `await backend.get_sandbox()`. `allow_internet_access=False` is a deny-all `NetworkPolicy`, so pass one or the other; `OpenSandbox` raises `UserError` for both.
 
@@ -261,7 +261,7 @@ Set `sandbox_timeout` above the longest gap between workspace operations, includ
 
 ## Security model
 
-The sandbox's isolation is the server's runtime: a Docker container shares the host's kernel, and a Kubernetes pod shares its node's, unless the server is configured with a secure runtime such as gVisor or Kata Containers. Inside, commands run as the image's user, usually `root`. The capability passes `allow_internet_access`, `network_policy`, `credential_proxy` and `secure_access` to the server when it creates a sandbox, and the server applies them.
+The sandbox's isolation is the server's runtime: a Docker container shares the host's kernel, and a Kubernetes pod shares its node's, unless the server is configured with a secure runtime such as gVisor or Kata Containers. Inside, commands run as the image's user, usually `root`. The capability passes `allow_internet_access`, `network_policy` and `secure_access` to the server when it creates a sandbox, and the server applies them.
 
 - With the default `allow_internet_access=True`, a Docker-backed sandbox can reach its host and LAN, including the OpenSandbox server if it listens there. `False` on a server in `dns+nft` mode blocks that; see [Network access](#network-access).
 - Requests to the server's API carry the server API key. Command and file requests carry commands, file contents and `env` values. Over plain `http` all of them are unencrypted. Without a `connection`, an `https://` domain in `OPEN_SANDBOX_DOMAIN` sends every request over HTTPS. A `ConnectionConfig` you pass is used as given, so set both an `https://` domain and `protocol='https'` on it; see [Run on Kubernetes](#run-on-kubernetes).
@@ -280,7 +280,6 @@ The sandbox's isolation is the server's runtime: a Docker container shares the h
 | `resource` | Resource limits for a new sandbox, such as `{'cpu': '500m', 'memory': '1Gi'}`. Default: `None`, one CPU and 2 GiB. |
 | `allow_internet_access` | Default: `True`, which sends no policy, so the server's configuration applies. `False` asks the server for deny-all egress on a new sandbox; see [Network access](#network-access). |
 | `network_policy` | The SDK's `NetworkPolicy` for a new sandbox, passed to `Sandbox.create` unchanged. Default: `None`. Cannot be combined with `allow_internet_access=False`. A spec cannot set it. |
-| `credential_proxy` | The SDK's `CredentialProxyConfig` for a new sandbox, passed to `Sandbox.create` unchanged. Default: `None`. See [Give commands a credential they cannot read](#give-commands-a-credential-they-cannot-read). A spec cannot set it. |
 | `secure_access` | Default: `False`. `True` asks the server to make its Kubernetes ingress gateway and proxy require a token for a new sandbox's endpoints; see [Endpoint authentication](#endpoint-authentication). Docker rejects `True`. |
 | `sandbox_timeout` | Seconds a sandbox may go unused before the server deletes it, files included; every operation renews it, and a single command must finish within it. Default: `None`, kept until destroyed. |
 | `working_dir` | Absolute directory commands start in and relative paths resolve against, created on first use if missing. Default: `/workspace`; `None` uses the image's own. |
